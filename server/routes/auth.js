@@ -8,19 +8,20 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
+    const normalizedUsername = username?.trim();
 
-    if (!username || !password) {
+    if (!normalizedUsername || !password) {
       return res
         .status(400)
         .json({ message: "Username and password are required" });
     }
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: normalizedUsername });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
 
-    const user = new User({ username, password });
+    const user = new User({ username: normalizedUsername, password });
     await user.save();
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
@@ -37,18 +38,14 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
+    const normalizedUsername = username?.trim();
 
-    console.log("Login attempt for username:", username);
-
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: normalizedUsername });
     if (!user) {
-      console.log("User not found");
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    console.log("User found, comparing password");
     const isMatch = await user.comparePassword(password);
-    console.log("Password match result:", isMatch);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
